@@ -45,7 +45,7 @@ namespace TaltosWorks.Owin
 			}
 
 			var token = authValue.Substring("Basic ".Length).Trim();
-			var credentials = TryGetCredentialsFromBasicAuthHeader(token);
+			var credentials = TryGetCredentialsFromBasicAuthHeader(token, options.DefaultDomain);
 
 			if (!credentials.HasValue)
 			{
@@ -54,7 +54,7 @@ namespace TaltosWorks.Owin
 
 			IntPtr userToken = IntPtr.Zero;
 			if (Win32NativeMethods.LogonUser(credentials.Value.name
-				, credentials.Value.domain ?? options.DefaultDomain
+				, credentials.Value.domain
 				, credentials.Value.password
 				, (int)LogonType.LOGON32_LOGON_NETWORK_CLEARTEXT
 				, (int)LogonProvider.LOGON32_PROVIDER_DEFAULT
@@ -89,7 +89,7 @@ namespace TaltosWorks.Owin
 			return Task.FromResult<object>(null);
 		}
 
-		private static (string domain, string name, string password)? TryGetCredentialsFromBasicAuthHeader(string credentials)
+		private static (string domain, string name, string password)? TryGetCredentialsFromBasicAuthHeader(string credentials, string defaultDomain)
 		{
 			string pair;
 			try
@@ -121,12 +121,12 @@ namespace TaltosWorks.Owin
 			username_domain = username_password[0].Split('@');
 			if (username_domain.Length == 2)
 			{
-				return (username_domain[1], username_domain[0], username_password[1]);
+				return (null, username_password[0], username_password[1]);
 			}
 
 			if (username_domain.Length == 1)
 			{
-				return (null, username_password[0], username_password[1]);
+				return (defaultDomain, username_password[0], username_password[1]);
 			}
 
 			return null;
